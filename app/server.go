@@ -16,14 +16,28 @@ func main() {
 
 // 	Uncomment this block to pass the first stage
 
-	l, err := net.Listen("tcp", "0.0.0.0:9092")
+	listener, err := net.Listen("tcp", "0.0.0.0:9092")
 	if err != nil {
 		fmt.Println("Failed to bind to port 9092")
 		os.Exit(1)
+	}else{
+		fmt.Println("Server started on port 9092")
 	}
-	_, err = l.Accept()
+
+	conn, err := listener.Accept()
+	
+	// if conn
 	if err != nil {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
+	} else {
+		fmt.Println("Accepted connection: ", (conn.LocalAddr().String()))
 	}
+
+	defer conn.Close()
+
+	request := make([]byte, 1024)
+	conn.Read(request)
+
+	conn.Write([]byte{0,0,0,0,0,0,0,7})
 }
