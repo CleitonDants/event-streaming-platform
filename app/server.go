@@ -54,6 +54,12 @@ func main() {
 
 	response := make([]byte, 8)
 	copy(response[4:], request[8:12])
-
+	
+	if request_api_version < 0 || request_api_version > 4{
+		fmt.Println("error: Unsupported Kafka API version")
+		response = append(response,0,byte(35))
+        conn.Write(response)
+		os.Exit(0)
+	}
 	conn.Write(response)
 }
