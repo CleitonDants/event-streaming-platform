@@ -38,6 +38,7 @@ func main() {
 
 	request := make([]byte, 1024)
 	conn.Read(request)
-
+	fmt.Println(request)
+	
 	conn.Write([]byte{0,0,0,0,0,0,0,7})
 }
