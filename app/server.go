@@ -61,5 +61,17 @@ func main() {
         conn.Write(response)
 		os.Exit(0)
 	}
+
+	response = binary.BigEndian.AppendUint16(response, 0)
+	response = append(response, 2)
+	response = binary.BigEndian.AppendUint16(response, 18)
+	response = binary.BigEndian.AppendUint16(response, 0)
+	response = binary.BigEndian.AppendUint16(response, 4)
+	response = append(response, 0)
+	response = binary.BigEndian.AppendUint32(response, 0)
+	response = append(response, 0)
+	binary.BigEndian.PutUint32(response[0:4], uint32(len(response)-4))
+	
+	fmt.Printf("response: %d\n", response)
 	conn.Write(response)
 }
