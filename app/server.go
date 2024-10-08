@@ -11,34 +11,42 @@ import (
 var _ = net.Listen
 var _ = os.Exit
 
-func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	fmt.Println("Logs from your program will appear here!")
+func handleConnection(conn net.Conn) {
+	defer conn.Close()
+	fmt.Println("Accepted connection: ", (conn.LocalAddr().String()))
+	request := make([]byte, 1024)
 
-// 	Uncomment this block to pass the first stage
+	for {
+		n, err := conn.Read(request)
+		if err != nil {
+			fmt.Println("Reading error:", err)
+			return
+		}
+		fmt.Printf("Received: %s\n", string(request[:n]))
 
+		// Enviar resposta ao cliente (eco de volta)
+		_, err = conn.Write(kafkaProtocol(request))
+		if err != nil {
+			fmt.Println("Sending response error:", err)
+			return
+		}
+	}
+	
+}
+
+func initListener() net.Listener {
 	listener, err := net.Listen("tcp", "0.0.0.0:9092")
 	if err != nil {
 		fmt.Println("Failed to bind to port 9092")
 		os.Exit(1)
-	}else{
-		fmt.Println("Server started on port 9092")
 	}
-
-	conn, err := listener.Accept()
 	
-	// if conn
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
-	} else {
-		fmt.Println("Accepted connection: ", (conn.LocalAddr().String()))
-	}
+	fmt.Println("Server started on port 9092")
+	
+	return listener
+}
 
-	defer conn.Close()
-
-	request := make([]byte, 1024)
-	conn.Read(request)
+func kafkaProtocol(request []byte) []byte {
 
 	request_length := int32(binary.BigEndian.Uint32(request[0:4]))
 	request_api_key := int16(binary.BigEndian.Uint16(request[4:6]))
@@ -58,8 +66,7 @@ func main() {
 	if request_api_version < 0 || request_api_version > 4{
 		fmt.Println("error: Unsupported Kafka API version")
 		response = append(response,0,byte(35))
-        conn.Write(response)
-		os.Exit(0)
+        return response
 	}
 
 	response = binary.BigEndian.AppendUint16(response, 0)
@@ -73,5 +80,22 @@ func main() {
 	binary.BigEndian.PutUint32(response[0:4], uint32(len(response)-4))
 	
 	fmt.Printf("response: %d\n", response)
-	conn.Write(response)
+	return response
+}
+
+func main() {
+	listener := initListener()
+	defer listener.Close()
+	
+	for {
+
+		conn,error := listener.Accept()
+		if error != nil{
+			fmt.Println("Error accepting connection: ", error.Error())
+            continue
+		}
+
+		go handleConnection(conn)
+	}
+
 }
